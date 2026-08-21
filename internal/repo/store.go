@@ -66,7 +66,12 @@ func (s *Store) WithTx(ctx context.Context, fn func(store.Tx) error) (err error)
 	return nil
 }
 
-func (s *Store) Close() error { return s.index.Close() }
+func (s *Store) Close() error {
+	if err := s.index.Close(); err != nil {
+		return err
+	}
+	return clearRuntimeIndex(s.dataDir)
+}
 
 func (s *Store) Ping(ctx context.Context) error { return s.index.Ping(ctx) }
 
