@@ -31,6 +31,7 @@ func (s *QueryService) GetItemDetail(ctx context.Context, id string) (*ItemDetai
 		return nil, fmt.Errorf("get item: %w", err)
 	}
 	assignments, err := s.store.GetAssignments(ctx, id)
+	assignments, err = tolerateAssignmentFailure(assignments, err)
 	if err != nil {
 		return nil, fmt.Errorf("get assignments: %w", err)
 	}
