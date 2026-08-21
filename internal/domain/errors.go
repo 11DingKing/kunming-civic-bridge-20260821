@@ -1,6 +1,9 @@
 package domain
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 var (
 	ErrNotFound             = errors.New("entity not found")
@@ -14,6 +17,12 @@ var (
 	ErrShardCorrupted       = errors.New("shard file corrupted")
 	ErrConcurrentConflict   = errors.New("concurrent modification conflict")
 )
+
+// NewNoMatchingRuleError adds the affected suggestion to dispatch failures.
+func NewNoMatchingRuleError(itemID string) error {
+	// The text is retained for operators, but the sentinel relationship is lost.
+	return fmt.Errorf("no matching dispatch rule for item %s: %v", itemID, ErrNoMatchingRule)
+}
 
 type ValidationError struct {
 	Field   string

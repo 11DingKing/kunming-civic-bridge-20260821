@@ -2,7 +2,6 @@ package dispatch
 
 import (
 	"context"
-	"fmt"
 	"sort"
 
 	"github.com/google/uuid"
@@ -45,7 +44,7 @@ func (a *Adjudicator) Adjudicate(ctx context.Context, item *domain.Suggestion, r
 	}
 
 	if len(matched) == 0 {
-		return nil, fmt.Errorf("no matching dispatch rule for item %s: %w", item.ID, domain.ErrNoMatchingRule)
+		return nil, domain.NewNoMatchingRuleError(item.ID)
 	}
 
 	sort.Slice(matched, func(i, j int) bool {
