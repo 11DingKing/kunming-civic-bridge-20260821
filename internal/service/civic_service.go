@@ -359,7 +359,7 @@ func (s *CivicService) CreateHandlingPlan(ctx context.Context, req CreateHandlin
 	if err != nil {
 		return nil, fmt.Errorf("load review: %w", err)
 	}
-	if review.SuggestionID != req.SuggestionID || review.Verdict != domain.ReviewAccepted {
+	if !eligibleReview(review, req.SuggestionID) {
 		return nil, fmt.Errorf("accepted review for this suggestion is required: %w", domain.ErrValidation)
 	}
 	if req.Department == "" || req.Commitment == "" || !s.clock.Now().Before(req.DueAt) {
