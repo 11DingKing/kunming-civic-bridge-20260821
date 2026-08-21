@@ -141,8 +141,8 @@ func (s *CivicService) TransitionCampaign(ctx context.Context, id string, to dom
 		if err != nil {
 			return nil, fmt.Errorf("count active collection points: %w", err)
 		}
-		if count == 0 {
-			return nil, fmt.Errorf("campaign requires an active collection point: %w", domain.ErrValidation)
+		if err := requireCollectionCoverage(count); err != nil {
+			return nil, err
 		}
 	}
 	if to == domain.CampaignReview {
