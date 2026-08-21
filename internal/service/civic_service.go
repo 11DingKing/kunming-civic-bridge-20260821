@@ -421,27 +421,12 @@ func (s *CivicService) ProposeConversion(ctx context.Context, req ProposeConvers
 	if err != nil {
 		return nil, fmt.Errorf("load suggestion: %w", err)
 	}
-	if suggestion.Status != domain.StatusCompleted {
-		return nil, fmt.Errorf("suggestion must be completed before conversion: %w", domain.ErrInvalidTransition)
-	}
 	plans, err := s.store.ListHandlingPlansBySuggestion(ctx, req.SuggestionID)
 	if err != nil {
 		return nil, fmt.Errorf("list handling plans: %w", err)
 	}
-	if len(plans) == 0 {
-		return nil, fmt.Errorf("at least one handling plan is required: %w", domain.ErrValidation)
-	}
-	found := false
-	for _, plan := range plans {
-		if plan.Status != domain.HandlingCompleted {
-			return nil, fmt.Errorf("all handling plans must be completed: %w", domain.ErrInvalidTransition)
-		}
-		if plan.ID == req.PlanID {
-			found = true
-		}
-	}
-	if !found {
-		return nil, fmt.Errorf("conversion plan does not belong to suggestion: %w", domain.ErrValidation)
+	if !conversionReady(suggestion, plans, req.PlanID) {
+		return nil, fmt.Errorf("suggestion and conversion plan are not ready: %w", domain.ErrInvalidTransition)
 	}
 	if req.BenefitScope == "" || req.EvidenceRef == "" {
 		return nil, fmt.Errorf("benefit scope and evidence are required: %w", domain.ErrValidation)
