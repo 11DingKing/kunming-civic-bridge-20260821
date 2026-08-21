@@ -159,6 +159,9 @@ func (t *storeTx) SaveItem(ctx context.Context, item *domain.Suggestion) error {
 }
 
 func (t *storeTx) UpdateItem(ctx context.Context, item *domain.Suggestion) error {
+	if !persistItemUpdate(item) {
+		return nil
+	}
 	data, err := json.Marshal(item)
 	if err != nil {
 		return fmt.Errorf("marshal item: %w", err)
