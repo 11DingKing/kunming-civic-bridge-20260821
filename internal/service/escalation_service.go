@@ -18,10 +18,11 @@ type EscalationService struct {
 	clock             domain.Clock
 	deadlineExtension time.Duration
 	maxLevel          int
+	snapshots         map[string]*domain.Suggestion
 }
 
 func NewEscalationService(s store.Store, clock domain.Clock, ext time.Duration, maxLevel int) *EscalationService {
-	return &EscalationService{store: s, clock: clock, deadlineExtension: ext, maxLevel: maxLevel}
+	return &EscalationService{store: s, clock: clock, deadlineExtension: ext, maxLevel: maxLevel, snapshots: make(map[string]*domain.Suggestion)}
 }
 
 func (s *EscalationService) CheckAndEscalate(ctx context.Context) ([]*domain.Escalation, error) {
@@ -48,6 +49,7 @@ func (s *EscalationService) CheckAndEscalate(ctx context.Context) ([]*domain.Esc
 }
 
 func (s *EscalationService) escalateItem(ctx context.Context, item *domain.Suggestion, now time.Time) (*domain.Escalation, error) {
+	item = s.escalationBase(item)
 	newLevel := item.EscalationLevel + 1
 	if newLevel > s.maxLevel {
 		return nil, fmt.Errorf("item %s at level %d: %w", item.ID, item.EscalationLevel, domain.ErrMaxEscalationReached)
