@@ -221,12 +221,17 @@ func (s *Store) Resolve(token string, now time.Time) (User, error) {
 func (s *Store) Logout(token string, now time.Time) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	for idx := range s.data.Sessions {
-		if s.data.Sessions[idx].TokenHash == tokenHash(token) {
-			if s.data.Sessions[idx].RevokedAt == nil {
-				s.data.Sessions[idx].RevokedAt = &now
+	snapshot := snapshotSessions(s.data.Sessions)
+	for idx := range snapshot {
+		if snapshot[idx].TokenHash == tokenHash(token) {
+			if snapshot[idx].RevokedAt == nil {
+				snapshot[idx].RevokedAt = &now
 			}
-			return s.persist()
+			if err := s.persist(); err != nil {
+				return err
+			}
+			s.data.Sessions = snapshot
+			return nil
 		}
 	}
 	return ErrInvalidCredentials
