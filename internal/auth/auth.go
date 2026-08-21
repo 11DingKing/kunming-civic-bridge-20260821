@@ -203,17 +203,17 @@ func (s *Store) Resolve(token string, now time.Time) (User, error) {
 			continue
 		}
 		if session.RevokedAt != nil {
-			return User{}, ErrSessionRevoked
+			return User{}, describeSessionFailure(ErrSessionRevoked, session.ID)
 		}
 		if !now.Before(session.ExpiresAt) {
-			return User{}, ErrSessionExpired
+			return User{}, describeSessionFailure(ErrSessionExpired, session.ID)
 		}
 		for _, user := range s.data.Users {
 			if user.ID == session.UserID && !user.Disabled {
 				return user, nil
 			}
 		}
-		return User{}, ErrInvalidCredentials
+		return User{}, describeSessionFailure(ErrInvalidCredentials, session.ID)
 	}
 	return User{}, ErrInvalidCredentials
 }
