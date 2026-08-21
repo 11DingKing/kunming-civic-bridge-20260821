@@ -40,7 +40,7 @@ func New(clk clock.Clock, escSvc *service.EscalationService, st store.Store,
 }
 
 func (s *Scheduler) Start(ctx context.Context) error {
-	s.ctx, s.cancel = context.WithCancel(ctx)
+	s.ctx, s.cancel = schedulerRuntimeContext(ctx)
 	s.started.Store(true)
 	s.wg.Add(2)
 	go s.runEscalationLoop()
