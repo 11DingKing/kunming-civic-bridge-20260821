@@ -216,7 +216,9 @@ func (s *CivicService) IntakeSuggestion(ctx context.Context, suggestionID, campa
 		return nil, domain.ValidationError{Field: "source", Message: "must be online, offline or advisor"}
 	}
 	if existing, err := s.store.GetSuggestionIntakeByKey(ctx, campaignID, idempotencyKey); err == nil {
-		return existing, nil
+		if replay, done := replayedIntake(existing); done {
+			return replay, nil
+		}
 	} else if !errors.Is(err, domain.ErrNotFound) {
 		return nil, err
 	}
