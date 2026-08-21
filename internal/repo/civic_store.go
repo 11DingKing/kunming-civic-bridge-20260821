@@ -93,7 +93,9 @@ func (t *storeTx) InsertAdvisor(ctx context.Context, v *domain.Advisor) error {
 	return t.tx.InsertAdvisor(ctx, v)
 }
 func (t *storeTx) InsertSuggestionIntake(ctx context.Context, v *domain.SuggestionIntake) error {
-	return t.tx.InsertSuggestionIntake(ctx, v)
+	return t.capacity.Within(func() error {
+		return t.tx.InsertSuggestionIntake(ctx, v)
+	})
 }
 func (t *storeTx) InsertReview(ctx context.Context, v *domain.Review) error {
 	return t.tx.InsertReview(ctx, v)

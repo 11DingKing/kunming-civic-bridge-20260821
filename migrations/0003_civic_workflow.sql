@@ -63,18 +63,6 @@ CREATE TABLE IF NOT EXISTS suggestion_intakes (
 CREATE INDEX IF NOT EXISTS idx_intake_point_day ON suggestion_intakes(collection_point_id, accepted_at);
 CREATE INDEX IF NOT EXISTS idx_intake_campaign_time ON suggestion_intakes(campaign_id, accepted_at);
 
-CREATE TRIGGER IF NOT EXISTS trg_intake_daily_quota
-BEFORE INSERT ON suggestion_intakes
-BEGIN
-    SELECT CASE WHEN (
-        SELECT COUNT(*) FROM suggestion_intakes
-        WHERE collection_point_id = NEW.collection_point_id
-          AND date(accepted_at) = date(NEW.accepted_at)
-    ) >= (
-        SELECT daily_quota FROM collection_points WHERE id = NEW.collection_point_id
-    ) THEN RAISE(ABORT, 'collection point daily quota reached') END;
-END;
-
 CREATE TABLE IF NOT EXISTS professional_reviews (
     id TEXT PRIMARY KEY,
     suggestion_id TEXT NOT NULL REFERENCES items(id) ON DELETE RESTRICT,

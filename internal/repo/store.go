@@ -47,7 +47,7 @@ func (s *Store) WithTx(ctx context.Context, fn func(store.Tx) error) (err error)
 	if txErr != nil {
 		return fmt.Errorf("begin index tx: %w", txErr)
 	}
-	tx := &storeTx{tx: idxTx, writer: s.writer, clock: s.clock}
+	tx := &storeTx{tx: idxTx, writer: s.writer, clock: s.clock, capacity: &store.CapacityGuard{}}
 	defer func() {
 		if p := recover(); p != nil {
 			_ = tx.Rollback()
@@ -135,9 +135,10 @@ func (s *Store) ListBatches(ctx context.Context, filter domain.BatchFilter) ([]*
 }
 
 type storeTx struct {
-	tx     *index.Tx
-	writer *shard.Writer
-	clock  domain.Clock
+	tx       *index.Tx
+	writer   *shard.Writer
+	clock    domain.Clock
+	capacity *store.CapacityGuard
 }
 
 func (t *storeTx) Commit() error { return t.tx.Commit() }
