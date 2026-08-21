@@ -566,8 +566,7 @@ func (s *CivicService) CompleteFeedback(ctx context.Context, id string, delivery
 		if receipt.Attempt >= maxAttempts {
 			receipt.Status = domain.FeedbackPermanentFailed
 		} else {
-			receipt.Status = domain.FeedbackQueued
-			receipt.NextAttemptAt = now.Add(baseBackoff * time.Duration(1<<min(receipt.Attempt-1, 8)))
+			scheduleFeedbackRetry(receipt, now, baseBackoff)
 		}
 	}
 	err = s.store.WithTx(ctx, func(tx store.Tx) error { return tx.UpdateFeedback(ctx, receipt, expected) })
