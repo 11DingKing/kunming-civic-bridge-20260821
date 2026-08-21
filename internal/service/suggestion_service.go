@@ -138,6 +138,16 @@ func (s *ItemService) StartProcessing(ctx context.Context, id, actor string) (*d
 	return item, nil
 }
 
+// StartProcessingForHTTP models the service boundary used by HTTP callers.
+func (s *ItemService) StartProcessingForHTTP(ctx context.Context, id, actor string) (*domain.Suggestion, error) {
+	item, err := s.StartProcessing(ctx, id, actor)
+	if err != nil {
+		// Preserve the operator-facing message when crossing the boundary.
+		return nil, errors.New(err.Error())
+	}
+	return item, nil
+}
+
 func (s *ItemService) Modify(ctx context.Context, id string, req ModifyItemRequest) (*domain.Suggestion, error) {
 	item, err := s.store.GetItem(ctx, id)
 	if err != nil {

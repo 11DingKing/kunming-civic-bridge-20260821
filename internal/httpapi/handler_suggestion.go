@@ -77,7 +77,7 @@ func (s *Server) startProcessing(w http.ResponseWriter, r *http.Request) {
 	if actor == "" {
 		actor = "unknown"
 	}
-	item, err := s.itemSvc.StartProcessing(r.Context(), id, actor)
+	item, err := s.itemSvc.StartProcessingForHTTP(r.Context(), id, actor)
 	if err != nil {
 		writeServiceError(w, r, err)
 		return
