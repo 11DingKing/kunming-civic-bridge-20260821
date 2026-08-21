@@ -60,6 +60,13 @@ func (s *Server) me(w http.ResponseWriter, r *http.Request) {
 		writeError(w, "", http.StatusUnauthorized, "UNAUTHORIZED", "缺少会话令牌")
 		return
 	}
+	s.authCacheMu.RLock()
+	cached, ok := s.authCache[token]
+	s.authCacheMu.RUnlock()
+	if ok {
+		writeJSON(w, http.StatusOK, cached)
+		return
+	}
 	user, err := s.authStore.Resolve(token, time.Now().UTC())
 	if errors.Is(err, auth.ErrSessionExpired) {
 		writeError(w, "", http.StatusUnauthorized, "SESSION_EXPIRED", "会话已过期")
@@ -73,5 +80,8 @@ func (s *Server) me(w http.ResponseWriter, r *http.Request) {
 		writeError(w, "", http.StatusUnauthorized, "INVALID_SESSION", "会话无效")
 		return
 	}
+	s.authCacheMu.Lock()
+	s.authCache[token] = user
+	s.authCacheMu.Unlock()
 	writeJSON(w, http.StatusOK, user)
 }

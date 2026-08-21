@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/benbjohnson/clock"
@@ -36,6 +37,8 @@ type Server struct {
 	logger       *applog.Logger
 	authStore    *auth.Store
 	authTTL      time.Duration
+	authCacheMu  sync.RWMutex
+	authCache    map[string]auth.User
 	router       chi.Router
 	httpSrv      *http.Server
 }
@@ -54,6 +57,7 @@ func New(cfg *config.Config, st store.Store, clk clock.Clock, logger *applog.Log
 		reevalWorker: worker.New(clk, adj, st, cfg.Scheduler, logger),
 		logger:       logger,
 		authTTL:      cfg.Auth.SessionTTL,
+		authCache:    make(map[string]auth.User),
 	}
 	authPath := cfg.Auth.StorePath
 	if !filepath.IsAbs(authPath) && cfg.Storage.DataDir != "" {
