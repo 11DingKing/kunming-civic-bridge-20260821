@@ -23,6 +23,11 @@ func (s ItemStatus) IsTerminal() bool {
 	return s == StatusCompleted || s == StatusCancelled
 }
 
+// LocksRouting reports whether a later rule version may change the assignment.
+func (s ItemStatus) LocksRouting() bool {
+	return s == StatusCancelled || s == StatusInProgress || s == StatusEscalated
+}
+
 type Suggestion struct {
 	ID                string     `json:"id"`
 	ExternalRef       string     `json:"external_ref"`

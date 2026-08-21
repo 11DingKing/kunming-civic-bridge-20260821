@@ -20,6 +20,7 @@ var ErrRuleReeval = errors.New("rule re-evaluation failure")
 var reevaluableStatuses = []domain.ItemStatus{
 	domain.StatusRegistered,
 	domain.StatusAdjudicated,
+	domain.StatusCompleted,
 }
 
 const sweepPageSize = 200
@@ -101,7 +102,7 @@ func (w *ReevalWorker) reevaluateItem(ctx context.Context, item *domain.Suggesti
 		w.skipped.Add(1)
 		return nil
 	}
-	if fresh.Status.IsTerminal() {
+	if fresh.Status.LocksRouting() {
 		w.skipped.Add(1)
 		return nil
 	}
@@ -157,6 +158,9 @@ func (w *ReevalWorker) reevaluateItem(ctx context.Context, item *domain.Suggesti
 }
 
 func isReevaluable(s domain.ItemStatus) bool {
+	if !s.LocksRouting() {
+		return true
+	}
 	for _, r := range reevaluableStatuses {
 		if s == r {
 			return true
