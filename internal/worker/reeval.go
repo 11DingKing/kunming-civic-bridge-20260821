@@ -29,7 +29,7 @@ const sweepPageSize = 200
 func (w *ReevalWorker) sweep(ctx context.Context) error {
 	current, err := w.store.GetCurrentRuleVersion(ctx)
 	if err != nil {
-		return fmt.Errorf("get current rule version: %w: %w", err, ErrRuleReeval)
+		return reevalFailure("get current rule version", err)
 	}
 	if current == 0 {
 		return nil
@@ -37,12 +37,12 @@ func (w *ReevalWorker) sweep(ctx context.Context) error {
 
 	rules, err := w.store.GetActiveRules(ctx, w.clock.Now())
 	if err != nil {
-		return fmt.Errorf("get active rules: %w: %w", err, ErrRuleReeval)
+		return reevalFailure("get active rules", err)
 	}
 
 	stale, err := w.collectStaleItems(ctx, current)
 	if err != nil {
-		return fmt.Errorf("collect stale items: %w: %w", err, ErrRuleReeval)
+		return reevalFailure("collect stale items", err)
 	}
 	if len(stale) == 0 {
 		return nil
@@ -50,7 +50,7 @@ func (w *ReevalWorker) sweep(ctx context.Context) error {
 
 	for _, item := range stale {
 		if err := ctx.Err(); err != nil {
-			return fmt.Errorf("sweep canceled: %w: %w", err, ErrRuleReeval)
+			return reevalFailure("sweep canceled", err)
 		}
 		if err := w.reevaluateItem(ctx, item, rules, current); err != nil {
 			w.failed.Add(1)
