@@ -65,7 +65,7 @@ func (s *ItemService) Register(ctx context.Context, req RegisterItemRequest) (*d
 		return nil, fmt.Errorf("check duplicate: %w", err)
 	}
 	if existing != nil {
-		return existing, nil
+		return nil, existingSuggestionConflict(existing)
 	}
 
 	now := s.clock.Now()
