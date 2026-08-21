@@ -122,6 +122,9 @@ func (s *Store) RebuildIndex(ctx context.Context) (store.RebuildReport, error) {
 		return report, fmt.Errorf("begin tx: %w", err)
 	}
 	defer idxTx.Rollback()
+	plan := newReplayPlan(collector)
+	plan.prepare()
+	collector = plan.records
 
 	if err := idxTx.DeleteAllData(ctx); err != nil {
 		return report, fmt.Errorf("delete all data: %w", err)
