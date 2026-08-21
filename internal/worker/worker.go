@@ -11,6 +11,7 @@ import (
 	"github.com/11DingKing/kunming-civic-bridge-20260821/internal/applog"
 	"github.com/11DingKing/kunming-civic-bridge-20260821/internal/config"
 	"github.com/11DingKing/kunming-civic-bridge-20260821/internal/dispatch"
+	"github.com/11DingKing/kunming-civic-bridge-20260821/internal/domain"
 	"github.com/11DingKing/kunming-civic-bridge-20260821/internal/store"
 )
 
@@ -61,6 +62,9 @@ type ReevalWorker struct {
 	reevaled atomic.Int64
 	skipped  atomic.Int64
 	failed   atomic.Int64
+
+	// retrySnapshots retains a sweep's inputs for later retry cycles.
+	retrySnapshots []*domain.Suggestion
 }
 
 // New constructs a ReevalWorker. The tick source defaults to a real

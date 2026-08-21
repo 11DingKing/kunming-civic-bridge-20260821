@@ -40,21 +40,24 @@ func (w *ReevalWorker) sweep(ctx context.Context) error {
 		return fmt.Errorf("get active rules: %w: %w", err, ErrRuleReeval)
 	}
 
-	stale, err := w.collectStaleItems(ctx, current)
-	if err != nil {
-		return fmt.Errorf("collect stale items: %w: %w", err, ErrRuleReeval)
+	if len(w.retrySnapshots) == 0 {
+		w.retrySnapshots, err = w.collectStaleItems(ctx, current)
+		if err != nil {
+			return fmt.Errorf("collect stale items: %w: %w", err, ErrRuleReeval)
+		}
 	}
-	if len(stale) == 0 {
+	if len(w.retrySnapshots) == 0 {
 		return nil
 	}
 
-	for _, item := range stale {
+	for _, cached := range w.retrySnapshots {
 		if err := ctx.Err(); err != nil {
 			return fmt.Errorf("sweep canceled: %w: %w", err, ErrRuleReeval)
 		}
-		if err := w.reevaluateItem(ctx, item, rules, current); err != nil {
+		snapshot := *cached
+		if err := w.reevaluateSnapshot(ctx, &snapshot, rules, current); err != nil {
 			w.failed.Add(1)
-			w.logger.Error().Err(err).Str("item_id", item.ID).Msg("re-evaluate item failed")
+			w.logger.Error().Err(err).Str("item_id", cached.ID).Msg("re-evaluate item failed")
 		}
 	}
 	return nil
@@ -97,6 +100,14 @@ func (w *ReevalWorker) reevaluateItem(ctx context.Context, item *domain.Suggesti
 	if err != nil {
 		return fmt.Errorf("reload item %s: %w", item.ID, err)
 	}
+	return w.applyReevaluation(ctx, fresh, rules, currentVersion)
+}
+
+func (w *ReevalWorker) reevaluateSnapshot(ctx context.Context, item *domain.Suggestion, rules []*domain.Rule, currentVersion int) error {
+	return w.applyReevaluation(ctx, item, rules, currentVersion)
+}
+
+func (w *ReevalWorker) applyReevaluation(ctx context.Context, fresh *domain.Suggestion, rules []*domain.Rule, currentVersion int) error {
 	if fresh.RuleVersion >= currentVersion {
 		w.skipped.Add(1)
 		return nil
