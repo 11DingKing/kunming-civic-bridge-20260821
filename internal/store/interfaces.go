@@ -34,7 +34,7 @@ type Tx interface {
 	InsertFeedback(ctx context.Context, receipt *domain.FeedbackReceipt) error
 	UpdateFeedback(ctx context.Context, receipt *domain.FeedbackReceipt, expectedVersion int) error
 	InsertOutbox(ctx context.Context, event *domain.OutboxEvent) error
-	UpdateOutbox(ctx context.Context, event *domain.OutboxEvent) error
+	UpdateOutbox(ctx context.Context, event *domain.OutboxEvent, expectedVersion int) error
 }
 
 type Store interface {

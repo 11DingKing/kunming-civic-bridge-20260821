@@ -392,7 +392,7 @@ func scanOutbox(row scanner) (*domain.OutboxEvent, error) {
 	var available, created, updated string
 	var lease sql.NullString
 	err := row.Scan(&e.ID, &e.AggregateID, &e.Topic, &e.Payload, &e.Status, &e.Attempt,
-		&available, &lease, &e.IdempotencyKey, &created, &updated)
+		&e.Version, &available, &lease, &e.IdempotencyKey, &created, &updated)
 	if err != nil {
 		return nil, noRows(err)
 	}
@@ -411,7 +411,7 @@ func scanOutbox(row scanner) (*domain.OutboxEvent, error) {
 	return &e, nil
 }
 
-const outboxCols = `id,aggregate_id,topic,payload,status,attempt,available_at,lease_until,idempotency_key,created_at,updated_at`
+const outboxCols = `id,aggregate_id,topic,payload,status,attempt,version,available_at,lease_until,idempotency_key,created_at,updated_at`
 
 func (i *Index) GetOutbox(ctx context.Context, id string) (*domain.OutboxEvent, error) {
 	return scanOutbox(i.db.QueryRowContext(ctx, "SELECT "+outboxCols+" FROM outbox_events WHERE id=?", id))

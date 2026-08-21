@@ -162,6 +162,7 @@ CREATE TABLE IF NOT EXISTS outbox_events (
     payload TEXT NOT NULL,
     status TEXT NOT NULL CHECK(status IN ('pending','processing','published','failed')),
     attempt INTEGER NOT NULL DEFAULT 0,
+    version INTEGER NOT NULL DEFAULT 1,
     available_at TEXT NOT NULL,
     lease_until TEXT,
     idempotency_key TEXT NOT NULL UNIQUE,

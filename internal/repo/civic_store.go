@@ -122,6 +122,6 @@ func (t *storeTx) UpdateFeedback(ctx context.Context, v *domain.FeedbackReceipt,
 func (t *storeTx) InsertOutbox(ctx context.Context, v *domain.OutboxEvent) error {
 	return t.tx.InsertOutbox(ctx, v)
 }
-func (t *storeTx) UpdateOutbox(ctx context.Context, v *domain.OutboxEvent) error {
-	return t.tx.UpdateOutbox(ctx, v)
+func (t *storeTx) UpdateOutbox(ctx context.Context, v *domain.OutboxEvent, expected int) error {
+	return t.tx.UpdateOutbox(ctx, v, expected)
 }

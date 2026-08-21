@@ -233,6 +233,37 @@ func TestCivicPublishedConversionQueuesFeedbackAndOutboxAtomically(t *testing.T)
 	assert.Equal(t, suggestionID, events[0].AggregateID)
 }
 
+func TestCivicConcurrentOutboxClaimsGrantSingleLease(t *testing.T) {
+	f := setupCivic(t)
+	_, suggestionID := completeConversion(t, f)
+	_, err := f.civicSvc.QueueFeedback(f.ctx, suggestionID, "sha256:citizen-outbox", "wechat")
+	require.NoError(t, err)
+
+	start := make(chan struct{})
+	results := make(chan []*domain.OutboxEvent, 2)
+	errs := make(chan error, 2)
+	var ready sync.WaitGroup
+	ready.Add(2)
+	for range 2 {
+		go func() {
+			ready.Done()
+			<-start
+			claimed, claimErr := f.civicSvc.ClaimOutbox(f.ctx, 1, time.Minute)
+			results <- claimed
+			errs <- claimErr
+		}()
+	}
+	ready.Wait()
+	close(start)
+
+	total := 0
+	for range 2 {
+		require.NoError(t, <-errs)
+		total += len(<-results)
+	}
+	assert.Equal(t, 1, total)
+}
+
 func TestCivicFeedbackRetryBackoffAndPermanentFailure(t *testing.T) {
 	f := setupCivic(t)
 	_, suggestionID := completeConversion(t, f)

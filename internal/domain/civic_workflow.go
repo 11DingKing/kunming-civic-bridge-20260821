@@ -261,6 +261,7 @@ type OutboxEvent struct {
 	Payload        string     `json:"payload"`
 	Status         string     `json:"status"`
 	Attempt        int        `json:"attempt"`
+	Version        int        `json:"version"`
 	AvailableAt    time.Time  `json:"available_at"`
 	LeaseUntil     *time.Time `json:"lease_until,omitempty"`
 	IdempotencyKey string     `json:"idempotency_key"`

@@ -505,7 +505,7 @@ func (s *CivicService) QueueFeedback(ctx context.Context, suggestionID, citizenH
 	}
 	now := s.clock.Now()
 	receipt := &domain.FeedbackReceipt{ID: uuid.NewString(), SuggestionID: suggestionID, CitizenHash: citizenHash, Channel: channel, Status: domain.FeedbackQueued, NextAttemptAt: now, Version: 1, CreatedAt: now, UpdatedAt: now}
-	event := &domain.OutboxEvent{ID: uuid.NewString(), AggregateID: suggestionID, Topic: "civic.feedback.queued", Payload: fmt.Sprintf(`{"feedback_id":%q,"channel":%q}`, receipt.ID, channel), Status: "pending", AvailableAt: now, IdempotencyKey: "feedback:" + receipt.ID, CreatedAt: now, UpdatedAt: now}
+	event := &domain.OutboxEvent{ID: uuid.NewString(), AggregateID: suggestionID, Topic: "civic.feedback.queued", Payload: fmt.Sprintf(`{"feedback_id":%q,"channel":%q}`, receipt.ID, channel), Status: "pending", Version: 1, AvailableAt: now, IdempotencyKey: "feedback:" + receipt.ID, CreatedAt: now, UpdatedAt: now}
 	err = s.store.WithTx(ctx, func(tx store.Tx) error {
 		if err := tx.InsertFeedback(ctx, receipt); err != nil {
 			return fmt.Errorf("save feedback receipt: %w", err)
@@ -588,9 +588,13 @@ func (s *CivicService) ClaimOutbox(ctx context.Context, limit int, lease time.Du
 		if err := ctx.Err(); err != nil {
 			return claimed, fmt.Errorf("claim outbox cancelled: %w", err)
 		}
+		expected := event.Version
 		until := now.Add(lease)
-		event.Status, event.LeaseUntil, event.UpdatedAt = "processing", &until, now
-		if err := s.store.WithTx(ctx, func(tx store.Tx) error { return tx.UpdateOutbox(ctx, event) }); err != nil {
+		event.Status, event.LeaseUntil, event.UpdatedAt, event.Version = "processing", &until, now, expected+1
+		if err := s.store.WithTx(ctx, func(tx store.Tx) error { return tx.UpdateOutbox(ctx, event, expected) }); err != nil {
+			if errors.Is(err, domain.ErrConcurrentConflict) {
+				continue
+			}
 			return claimed, err
 		}
 		claimed = append(claimed, event)
@@ -607,8 +611,10 @@ func (s *CivicService) CompleteOutbox(ctx context.Context, id string, publishErr
 		return nil, fmt.Errorf("outbox event is not leased: %w", domain.ErrInvalidTransition)
 	}
 	now := s.clock.Now()
+	expected := event.Version
 	event.LeaseUntil = nil
 	event.UpdatedAt = now
+	event.Version++
 	if publishErr == nil {
 		event.Status = "published"
 	} else {
@@ -621,7 +627,7 @@ func (s *CivicService) CompleteOutbox(ctx context.Context, id string, publishErr
 			event.AvailableAt = now.Add(backoff * time.Duration(1<<min(event.Attempt-1, 8)))
 		}
 	}
-	if err := s.store.WithTx(ctx, func(tx store.Tx) error { return tx.UpdateOutbox(ctx, event) }); err != nil {
+	if err := s.store.WithTx(ctx, func(tx store.Tx) error { return tx.UpdateOutbox(ctx, event, expected) }); err != nil {
 		return nil, err
 	}
 	return event, nil

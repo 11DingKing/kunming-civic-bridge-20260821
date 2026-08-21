@@ -169,8 +169,8 @@ func (t *Tx) UpdateFeedback(ctx context.Context, r *domain.FeedbackReceipt, expe
 
 func (t *Tx) InsertOutbox(ctx context.Context, e *domain.OutboxEvent) error {
 	_, err := t.tx.ExecContext(ctx, `INSERT INTO outbox_events
-		(id,aggregate_id,topic,payload,status,attempt,available_at,lease_until,idempotency_key,created_at,updated_at)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?)`, e.ID, e.AggregateID, e.Topic, e.Payload, e.Status, e.Attempt,
+		(id,aggregate_id,topic,payload,status,attempt,version,available_at,lease_until,idempotency_key,created_at,updated_at)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`, e.ID, e.AggregateID, e.Topic, e.Payload, e.Status, e.Attempt, e.Version,
 		formatTime(e.AvailableAt), formatNullableTime(e.LeaseUntil), e.IdempotencyKey,
 		formatTime(e.CreatedAt), formatTime(e.UpdatedAt))
 	if err != nil {
@@ -179,9 +179,9 @@ func (t *Tx) InsertOutbox(ctx context.Context, e *domain.OutboxEvent) error {
 	return nil
 }
 
-func (t *Tx) UpdateOutbox(ctx context.Context, e *domain.OutboxEvent) error {
-	result, err := t.tx.ExecContext(ctx, `UPDATE outbox_events SET status=?,attempt=?,available_at=?,lease_until=?,updated_at=? WHERE id=?`,
-		e.Status, e.Attempt, formatTime(e.AvailableAt), formatNullableTime(e.LeaseUntil), formatTime(e.UpdatedAt), e.ID)
+func (t *Tx) UpdateOutbox(ctx context.Context, e *domain.OutboxEvent, expected int) error {
+	result, err := t.tx.ExecContext(ctx, `UPDATE outbox_events SET status=?,attempt=?,version=?,available_at=?,lease_until=?,updated_at=? WHERE id=? AND version=?`,
+		e.Status, e.Attempt, e.Version, formatTime(e.AvailableAt), formatNullableTime(e.LeaseUntil), formatTime(e.UpdatedAt), e.ID, expected)
 	if err != nil {
 		return fmt.Errorf("update outbox event: %w", err)
 	}
