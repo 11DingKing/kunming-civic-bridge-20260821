@@ -268,3 +268,12 @@ type OutboxEvent struct {
 	CreatedAt      time.Time  `json:"created_at"`
 	UpdatedAt      time.Time  `json:"updated_at"`
 }
+
+func (e *OutboxEvent) BeginDelivery(now time.Time, lease time.Duration) int {
+	expected := e.Version
+	until := now.Add(lease)
+	e.Status = "processing"
+	e.LeaseUntil = &until
+	e.UpdatedAt = now
+	return expected
+}

@@ -588,9 +588,7 @@ func (s *CivicService) ClaimOutbox(ctx context.Context, limit int, lease time.Du
 		if err := ctx.Err(); err != nil {
 			return claimed, fmt.Errorf("claim outbox cancelled: %w", err)
 		}
-		expected := event.Version
-		until := now.Add(lease)
-		event.Status, event.LeaseUntil, event.UpdatedAt, event.Version = "processing", &until, now, expected+1
+		expected := event.BeginDelivery(now, lease)
 		if err := s.store.WithTx(ctx, func(tx store.Tx) error { return tx.UpdateOutbox(ctx, event, expected) }); err != nil {
 			if errors.Is(err, domain.ErrConcurrentConflict) {
 				continue
