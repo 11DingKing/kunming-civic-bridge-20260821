@@ -37,13 +37,7 @@ func (s *BatchService) Import(ctx context.Context, req BatchImportRequest) (*dom
 	for i, itemReq := range req.Items {
 		item, err := s.itemSvc.Register(ctx, itemReq)
 		if err != nil {
-			result.Results = append(result.Results, domain.BatchRowResult{
-				RowIndex:    i,
-				ExternalRef: itemReq.ExternalRef,
-				Error:       err.Error(),
-			})
-			result.FailureCount++
-			continue
+			return nil, abortBatchRow(i, itemReq.ExternalRef, err)
 		}
 		result.Results = append(result.Results, domain.BatchRowResult{
 			RowIndex:    i,
