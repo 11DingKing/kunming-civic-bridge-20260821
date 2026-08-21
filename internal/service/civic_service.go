@@ -492,7 +492,9 @@ func (s *CivicService) QueueFeedback(ctx context.Context, suggestionID, citizenH
 		return nil, fmt.Errorf("feedback identity and channel are required: %w", domain.ErrValidation)
 	}
 	if existing, err := s.store.GetFeedbackByIdentity(ctx, suggestionID, citizenHash, channel); err == nil {
-		return existing, nil
+		if reusableFeedback(ctx, s.store, existing) {
+			return existing, nil
+		}
 	} else if !errors.Is(err, domain.ErrNotFound) {
 		return nil, err
 	}
