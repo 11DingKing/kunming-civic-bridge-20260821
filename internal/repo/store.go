@@ -60,9 +60,6 @@ func (s *Store) WithTx(ctx context.Context, fn func(store.Tx) error) (err error)
 	if err = fn(tx); err != nil {
 		return err
 	}
-	if err = tx.Commit(); err != nil {
-		return fmt.Errorf("commit tx: %w", err)
-	}
 	return nil
 }
 
@@ -135,12 +132,22 @@ func (s *Store) ListBatches(ctx context.Context, filter domain.BatchFilter) ([]*
 }
 
 type storeTx struct {
-	tx     *index.Tx
-	writer *shard.Writer
-	clock  domain.Clock
+	tx        *index.Tx
+	writer    *shard.Writer
+	clock     domain.Clock
+	committed bool
 }
 
-func (t *storeTx) Commit() error { return t.tx.Commit() }
+func (t *storeTx) Commit() error {
+	if t.committed {
+		return nil
+	}
+	if err := t.tx.Commit(); err != nil {
+		return err
+	}
+	t.committed = true
+	return nil
+}
 
 func (t *storeTx) Rollback() error { return t.tx.Rollback() }
 
@@ -155,7 +162,10 @@ func (t *storeTx) SaveItem(ctx context.Context, item *domain.Suggestion) error {
 	}
 	item.ShardPath = loc.Path
 	item.ShardOffset = loc.Offset
-	return t.tx.InsertItem(ctx, item)
+	if err := t.tx.InsertItem(ctx, item); err != nil {
+		return err
+	}
+	return t.Commit()
 }
 
 func (t *storeTx) UpdateItem(ctx context.Context, item *domain.Suggestion) error {
