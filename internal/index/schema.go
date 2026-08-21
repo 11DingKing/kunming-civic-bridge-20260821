@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"os"
 	"sort"
 	"strings"
 	"time"
@@ -50,6 +51,16 @@ func Open(ctx context.Context, dbPath string) (*Index, error) {
 		return nil, fmt.Errorf("migrate: %w", err)
 	}
 	return idx, nil
+}
+
+// OpenRuntimeIndex starts an index for a new server runtime.
+func OpenRuntimeIndex(ctx context.Context, dbPath string) (*Index, error) {
+	for _, path := range []string{dbPath, dbPath + "-wal", dbPath + "-shm"} {
+		if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+			return nil, fmt.Errorf("clear runtime index %s: %w", path, err)
+		}
+	}
+	return Open(ctx, dbPath)
 }
 
 func (i *Index) Close() error {

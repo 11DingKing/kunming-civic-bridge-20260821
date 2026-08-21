@@ -28,7 +28,7 @@ func New(ctx context.Context, dataDir string, clock domain.Clock, maxShardSize i
 		return nil, fmt.Errorf("ensure shard dirs: %w", err)
 	}
 	dbPath := filepath.Join(dataDir, "index.db")
-	idx, err := index.Open(ctx, dbPath)
+	idx, err := index.OpenRuntimeIndex(ctx, dbPath)
 	if err != nil {
 		return nil, fmt.Errorf("open index: %w", err)
 	}
