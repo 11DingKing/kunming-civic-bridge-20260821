@@ -104,12 +104,7 @@ func (s *Store) RebuildIndex(ctx context.Context) (store.RebuildReport, error) {
 	for _, sf := range files {
 		records, readErr := s.reader.ReadAll(sf.Path)
 		if readErr != nil {
-			report.CorruptedShards = append(report.CorruptedShards, store.CorruptedShard{
-				Path:   sf.Path,
-				Reason: readErr.Error(),
-			})
-			report.SkippedShards++
-			continue
+			return report, fmt.Errorf("recover shard %s: %w", sf.Path, readErr)
 		}
 		for _, rec := range records {
 			_ = collector.add(sf.EntityType, rec)

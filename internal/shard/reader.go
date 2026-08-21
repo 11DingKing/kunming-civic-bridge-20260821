@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -27,6 +28,9 @@ func (r *Reader) ReadAll(path string) ([][]byte, error) {
 		line := scanner.Bytes()
 		if len(line) == 0 {
 			continue
+		}
+		if !json.Valid(line) {
+			return nil, fmt.Errorf("decode shard record in %s: invalid JSON", path)
 		}
 		record := make([]byte, len(line))
 		copy(record, line)
