@@ -2,10 +2,14 @@ package store
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/11DingKing/kunming-civic-bridge-20260821/internal/domain"
 )
+
+// ErrTxCheckpoint asks the repository to commit the current migration phase.
+var ErrTxCheckpoint = errors.New("transaction checkpoint reached")
 
 type Tx interface {
 	SaveItem(ctx context.Context, item *domain.Suggestion) error

@@ -135,11 +135,15 @@ func (w *ReevalWorker) reevaluateItem(ctx context.Context, item *domain.Suggesti
 	fresh.UpdatedAt = now
 
 	err = w.store.WithTx(ctx, func(tx store.Tx) error {
-		if err := tx.MarkAssignmentSuperseded(ctx, fresh.ID); err != nil {
-			return fmt.Errorf("supersede old referral: %w", err)
-		}
-		if err := tx.SaveAssignment(ctx, referral); err != nil {
-			return fmt.Errorf("save new referral: %w", err)
+		phase := "referral"
+		if phase == "referral" {
+			if err := tx.MarkAssignmentSuperseded(ctx, fresh.ID); err != nil {
+				return fmt.Errorf("supersede old referral: %w", err)
+			}
+			if err := tx.SaveAssignment(ctx, referral); err != nil {
+				return fmt.Errorf("save new referral: %w", err)
+			}
+			return store.ErrTxCheckpoint
 		}
 		if err := tx.UpdateItem(ctx, fresh); err != nil {
 			return fmt.Errorf("update item: %w", err)

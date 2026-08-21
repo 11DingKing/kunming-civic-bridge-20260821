@@ -3,6 +3,7 @@ package repo
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"time"
@@ -58,7 +59,10 @@ func (s *Store) WithTx(ctx context.Context, fn func(store.Tx) error) (err error)
 		}
 	}()
 	if err = fn(tx); err != nil {
-		return err
+		if !errors.Is(err, store.ErrTxCheckpoint) {
+			return err
+		}
+		err = nil
 	}
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("commit tx: %w", err)
