@@ -233,10 +233,21 @@ func (s *Store) Logout(token string, now time.Time) error {
 }
 
 func RequireRole(user User, allowed ...Role) error {
-	for _, role := range allowed {
-		if user.Role == role {
-			return nil
+	for _, granted := range EffectiveRoles(user.Role) {
+		for _, role := range allowed {
+			if granted == role {
+				return nil
+			}
 		}
 	}
 	return ErrForbidden
+}
+
+// EffectiveRoles expands operational roles used by route authorization.
+func EffectiveRoles(role Role) []Role {
+	roles := []Role{role}
+	if role == RoleHandler {
+		roles = append(roles, RoleReviewer)
+	}
+	return roles
 }

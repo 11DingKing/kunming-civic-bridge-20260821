@@ -42,13 +42,17 @@ func (s *Server) requireRoles(roles ...auth.Role) func(http.Handler) http.Handle
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			user, ok := r.Context().Value(authContextKey{}).(auth.User)
-			if !ok || auth.RequireRole(user, roles...) != nil {
+			if !ok || !routeRoleAllowed(user, roles) {
 				writeError(w, middleware.GetReqID(r.Context()), http.StatusForbidden, "FORBIDDEN", "当前角色无权执行此操作")
 				return
 			}
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+func routeRoleAllowed(user auth.User, roles []auth.Role) bool {
+	return auth.RequireRole(user, roles...) == nil
 }
 
 func loggingMiddleware(logger *applog.Logger) func(http.Handler) http.Handler {
