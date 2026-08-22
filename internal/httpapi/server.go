@@ -38,6 +38,7 @@ type Server struct {
 	authTTL      time.Duration
 	router       chi.Router
 	httpSrv      *http.Server
+	readiness    readinessCache
 }
 
 func New(cfg *config.Config, st store.Store, clk clock.Clock, logger *applog.Logger, sched *scheduler.Scheduler) *Server {
@@ -162,6 +163,10 @@ func (s *Server) healthz(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) readyz(w http.ResponseWriter, r *http.Request) {
+	if cached, ok := s.readiness.load(); ok {
+		writeJSON(w, cached.status, cached.body)
+		return
+	}
 	ctx := r.Context()
 	checks := map[string]string{}
 	ready := true
@@ -201,10 +206,12 @@ func (s *Server) readyz(w http.ResponseWriter, r *http.Request) {
 	if !ready {
 		status = http.StatusServiceUnavailable
 	}
-	writeJSON(w, status, map[string]any{
+	body := map[string]any{
 		"status": map[bool]string{true: "ready", false: "not_ready"}[ready],
 		"checks": checks,
-	})
+	}
+	s.readiness.store(&readinessResult{status: status, body: body})
+	writeJSON(w, status, body)
 }
 
 func (s *Server) EscSvc() *service.EscalationService {
